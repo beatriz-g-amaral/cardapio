@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { Utensils, ArrowLeft, Leaf, Flame } from 'lucide-react';
+import { useParams, Link, useSearchParams } from 'react-router-dom';
+import { Utensils, ArrowLeft, Leaf, Flame, Share2, Check } from 'lucide-react';
+import LZString from 'lz-string';
 
 interface MenuItem {
   name: string;
@@ -16,24 +17,72 @@ interface MenuData {
 
 export default function MenuPage() {
   const { companyName } = useParams();
+  const [searchParams] = useSearchParams();
   const [menuData, setMenuData] = useState<MenuData>({ items: [], theme: 'classic' });
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const savedMenu = localStorage.getItem(`menu_${companyName}`);
-    if (savedMenu) {
-      // Handle legacy save format vs new format
-      const parsed = JSON.parse(savedMenu);
-      if (Array.isArray(parsed)) {
-        setMenuData({ items: parsed, theme: 'classic' });
-      } else {
-        setMenuData(parsed);
+    // 1. Tenta carregar dados da URL primeiro (Compartilhamento)
+    let compressedData = searchParams.get('data');
+    
+    // Fallback para ler a URL bruta caso o React Router corte o tamanho do link
+    if (!compressedData) {
+      const rawSearch = window.location.search || window.location.hash.split('?')[1] || '';
+      const dataMatch = rawSearch.match(/data=([^&]+)/);
+      if (dataMatch) {
+        compressedData = dataMatch[1];
       }
     }
-  }, [companyName]);
+
+    if (compressedData) {
+      try {
+        // Quando o React Router lê a URL, ele converte os símbolos de '+' em espaços (' ').
+        // O LZString precisa do '+' original para funcionar, então restauramos aqui:
+        const fixedData = compressedData.replace(/ /g, '+');
+        
+        const decompressed = LZString.decompressFromEncodedURIComponent(fixedData);
+        
+        if (decompressed) {
+          const parsed = JSON.parse(decompressed);
+          setMenuData(parsed);
+          
+          // Opcional: Salva no localStorage para a pessoa não perder se tirar o parâmetro da URL
+          localStorage.setItem(`menu_${companyName}`, decompressed);
+          return;
+        } else {
+          console.error("A descompressão retornou nulo.");
+        }
+      } catch (e) {
+        console.error("Erro ao descomprimir dados da URL", e);
+      }
+    }
+
+    // 2. Se não veio pela URL, tenta pegar do localStorage
+    const savedMenu = localStorage.getItem(`menu_${companyName}`);
+    if (savedMenu) {
+      try {
+        const parsed = JSON.parse(savedMenu);
+        if (Array.isArray(parsed)) {
+          setMenuData({ items: parsed, theme: 'classic' });
+        } else {
+          setMenuData(parsed);
+        }
+      } catch (e) {
+        console.error("Erro ao ler localStorage", e);
+      }
+    }
+  }, [companyName, searchParams]);
+
+  const handleShare = () => {
+    // A URL atual já contém os dados comprimidos se acabou de ser gerada
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const { items, theme } = menuData;
 
-  const groupedItems = items.reduce((acc, item) => {
+  const groupedItems = (items || []).reduce((acc, item) => {
     const cat = item.category || 'Outros';
     if (!acc[cat]) {
       acc[cat] = [];
@@ -58,7 +107,8 @@ export default function MenuPage() {
       descText: 'text-slate-500',
       priceText: 'text-orange-600',
       categoryBorder: 'border-orange-500/20',
-      icon: <Utensils className="w-64 h-64 absolute -top-10 -right-10 transform rotate-12 opacity-10" />
+      icon: <Utensils className="w-64 h-64 absolute -top-10 -right-10 transform rotate-12 opacity-10" />,
+      buttonClass: 'bg-white/20 hover:bg-white/30 text-white'
     },
     dark: {
       bg: 'bg-slate-900',
@@ -70,7 +120,8 @@ export default function MenuPage() {
       descText: 'text-slate-400',
       priceText: 'text-yellow-500',
       categoryBorder: 'border-yellow-500/20',
-      icon: <Flame className="w-64 h-64 absolute -top-10 -right-10 transform rotate-12 opacity-5 text-yellow-500" />
+      icon: <Flame className="w-64 h-64 absolute -top-10 -right-10 transform rotate-12 opacity-5 text-yellow-500" />,
+      buttonClass: 'bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-500'
     },
     minimal: {
       bg: 'bg-[#faf9f6]',
@@ -82,7 +133,8 @@ export default function MenuPage() {
       descText: 'text-emerald-800/70',
       priceText: 'text-emerald-700 font-medium',
       categoryBorder: 'border-emerald-800/20',
-      icon: <Leaf className="w-64 h-64 absolute -top-10 -right-10 transform rotate-12 opacity-10" />
+      icon: <Leaf className="w-64 h-64 absolute -top-10 -right-10 transform rotate-12 opacity-10" />,
+      buttonClass: 'bg-white/10 hover:bg-white/20 text-[#faf9f6]'
     }
   };
 
@@ -97,9 +149,20 @@ export default function MenuPage() {
         </div>
         
         <div className="max-w-2xl mx-auto relative z-10">
-          <Link to="/" className={`inline-flex items-center gap-2 mb-6 transition opacity-80 hover:opacity-100`}>
-            <ArrowLeft size={20} /> Voltar
-          </Link>
+          <div className="flex justify-between items-start mb-6">
+            <Link to="/" className={`inline-flex items-center gap-2 transition opacity-80 hover:opacity-100`}>
+              <ArrowLeft size={20} /> Voltar
+            </Link>
+            
+            <button 
+              onClick={handleShare}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm transition-all ${currentTheme.buttonClass}`}
+            >
+              {copied ? <Check size={18} /> : <Share2 size={18} />}
+              <span className="font-medium text-sm">{copied ? 'Link Copiado!' : 'Compartilhar'}</span>
+            </button>
+          </div>
+          
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2">
             {companyName ? formatName(companyName) : 'Cardápio'}
           </h1>
