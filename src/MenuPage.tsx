@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { Utensils, ArrowLeft, Leaf, Flame, Share2, Check } from 'lucide-react';
 import LZString from 'lz-string';
