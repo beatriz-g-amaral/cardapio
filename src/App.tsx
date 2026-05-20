@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ChefHat, Plus, Trash2, ArrowRight, LayoutTemplate, Upload, FileText, ClipboardPaste, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
@@ -18,6 +18,7 @@ interface MenuItem {
 
 export default function App() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [companyName, setCompanyName] = useState('');
   const [theme, setTheme] = useState('classic');
@@ -29,6 +30,37 @@ export default function App() {
   // Modal de Colar Texto
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
+
+  // Carregar dados de edição, se houver
+  useEffect(() => {
+    const editName = searchParams.get('edit');
+    let compressedData = searchParams.get('data');
+    
+    if (!compressedData) {
+      const rawSearch = window.location.search || window.location.hash.split('?')[1] || '';
+      const dataMatch = rawSearch.match(/data=([^&]+)/);
+      if (dataMatch) {
+        compressedData = dataMatch[1];
+      }
+    }
+
+    if (editName && compressedData) {
+      setCompanyName(editName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
+      try {
+        const fixedData = compressedData.replace(/ /g, '+');
+        const decompressed = LZString.decompressFromEncodedURIComponent(fixedData);
+        if (decompressed) {
+          const parsed = JSON.parse(decompressed);
+          if (parsed.items && Array.isArray(parsed.items)) {
+            setItems(parsed.items);
+            if (parsed.theme) setTheme(parsed.theme);
+          }
+        }
+      } catch (e) {
+        console.error("Erro ao descomprimir dados para edição", e);
+      }
+    }
+  }, [searchParams]);
 
   const handleAddItem = () => {
     setItems([...items, { name: '', description: '', price: '', category: '' }]);

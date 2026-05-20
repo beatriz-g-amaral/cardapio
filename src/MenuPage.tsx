@@ -151,16 +151,25 @@ export default function MenuPage() {
         <div className="max-w-2xl mx-auto relative z-10">
           <div className="flex justify-between items-start mb-6">
             <Link to="/" className={`inline-flex items-center gap-2 transition opacity-80 hover:opacity-100`}>
-              <ArrowLeft size={20} /> Voltar
+              <ArrowLeft size={20} /> Voltar/Novo
             </Link>
             
-            <button 
-              onClick={handleShare}
-              className={`flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm transition-all ${currentTheme.buttonClass}`}
-            >
-              {copied ? <Check size={18} /> : <Share2 size={18} />}
-              <span className="font-medium text-sm">{copied ? 'Link Copiado!' : 'Compartilhar'}</span>
-            </button>
+            <div className="flex items-center gap-3">
+              <Link 
+                to={`/?edit=${companyName}&data=${searchParams.get('data') || LZString.compressToEncodedURIComponent(JSON.stringify(menuData))}`}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm transition-all bg-black/20 hover:bg-black/30 text-white`}
+              >
+                <span className="font-medium text-sm">Editar</span>
+              </Link>
+              
+              <button 
+                onClick={handleShare}
+                className={`flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm transition-all ${currentTheme.buttonClass}`}
+              >
+                {copied ? <Check size={18} /> : <Share2 size={18} />}
+                <span className="font-medium text-sm">{copied ? 'Link Copiado!' : 'Compartilhar'}</span>
+              </button>
+            </div>
           </div>
           
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2">
