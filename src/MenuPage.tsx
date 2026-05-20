@@ -22,10 +22,9 @@ export default function MenuPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    // 1. Tenta carregar dados da URL primeiro (Compartilhamento)
+
     let compressedData = searchParams.get('data');
-    
-    // Fallback para ler a URL bruta caso o React Router corte o tamanho do link
+
     if (!compressedData) {
       const rawSearch = window.location.search || window.location.hash.split('?')[1] || '';
       const dataMatch = rawSearch.match(/data=([^&]+)/);
@@ -36,17 +35,15 @@ export default function MenuPage() {
 
     if (compressedData) {
       try {
-        // Quando o React Router lê a URL, ele converte os símbolos de '+' em espaços (' ').
-        // O LZString precisa do '+' original para funcionar, então restauramos aqui:
+
         const fixedData = compressedData.replace(/ /g, '+');
-        
+
         const decompressed = LZString.decompressFromEncodedURIComponent(fixedData);
-        
+
         if (decompressed) {
           const parsed = JSON.parse(decompressed);
           setMenuData(parsed);
-          
-          // Opcional: Salva no localStorage para a pessoa não perder se tirar o parâmetro da URL
+
           localStorage.setItem(`menu_${companyName}`, decompressed);
           return;
         } else {
@@ -57,7 +54,6 @@ export default function MenuPage() {
       }
     }
 
-    // 2. Se não veio pela URL, tenta pegar do localStorage
     const savedMenu = localStorage.getItem(`menu_${companyName}`);
     if (savedMenu) {
       try {
@@ -74,7 +70,7 @@ export default function MenuPage() {
   }, [companyName, searchParams]);
 
   const handleShare = () => {
-    // A URL atual já contém os dados comprimidos se acabou de ser gerada
+
     navigator.clipboard.writeText(window.location.href);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -95,7 +91,6 @@ export default function MenuPage() {
     return name.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
-  // Theme configuration
   const themes = {
     classic: {
       bg: 'bg-slate-50',
@@ -147,13 +142,13 @@ export default function MenuPage() {
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none">
           {currentTheme.icon}
         </div>
-        
+
         <div className="max-w-2xl mx-auto relative z-10">
           <div className="flex justify-between items-start mb-6">
             <Link to="/" className={`inline-flex items-center gap-2 transition opacity-80 hover:opacity-100`}>
               <ArrowLeft size={20} /> Voltar/Novo
             </Link>
-            
+
             <div className="flex items-center gap-3">
               <Link 
                 to={`/?edit=${companyName}&data=${searchParams.get('data') || LZString.compressToEncodedURIComponent(JSON.stringify(menuData))}`}
@@ -161,7 +156,7 @@ export default function MenuPage() {
               >
                 <span className="font-medium text-sm">Editar</span>
               </Link>
-              
+
               <button 
                 onClick={handleShare}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm transition-all ${currentTheme.buttonClass}`}
@@ -171,7 +166,7 @@ export default function MenuPage() {
               </button>
             </div>
           </div>
-          
+
           <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-2">
             {companyName ? formatName(companyName) : 'Cardápio'}
           </h1>

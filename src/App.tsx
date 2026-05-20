@@ -5,7 +5,6 @@ import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist';
 import LZString from 'lz-string';
 
-// Configuração do worker com importação nativa do Vite (garante que o Vite sirva o arquivo corretamente)
 import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
@@ -26,16 +25,14 @@ export default function App() {
   const [items, setItems] = useState<MenuItem[]>([
     { name: 'X-Burger', description: 'Pão, carne e queijo', price: '15.00', category: 'Lanches' }
   ]);
-  
-  // Modal de Colar Texto
+
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
   const [pasteText, setPasteText] = useState('');
 
-  // Carregar dados de edição, se houver
   useEffect(() => {
     const editName = searchParams.get('edit');
     let compressedData = searchParams.get('data');
-    
+
     if (!compressedData) {
       const rawSearch = window.location.search || window.location.hash.split('?')[1] || '';
       const dataMatch = rawSearch.match(/data=([^&]+)/);
@@ -119,7 +116,7 @@ export default function App() {
       let tempName = '';
       let tempDesc = '';
       const priceRegexSimple = /(?:R\$?\s*)?(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2}|\d+\.\d{2})/i;
-      
+
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         if ((line.includes('CERVEJA') || line.includes('LANCHE') || line.includes('BEBIDA') || (line.length < 40 && line === line.toUpperCase())) && !priceRegexSimple.test(line)) {
@@ -160,20 +157,20 @@ export default function App() {
       const arrayBuffer = await file.arrayBuffer();
       const loadingTask = pdfjsLib.getDocument({ 
         data: arrayBuffer,
-        cMapUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
+        cMapUrl: `https:
         cMapPacked: true,
-        standardFontDataUrl: `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/standard_fonts/`
+        standardFontDataUrl: `https:
       });
       const pdf = await loadingTask.promise;
-      
+
       let fullText = '';
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
-        
+
         const itemsList = textContent.items as any[];
         const linesMap = new Map<number, string[]>();
-        
+
         itemsList.forEach(item => {
           if (!item.str.trim()) return;
           const y = Math.round(item.transform[5] / 2) * 2;
@@ -184,7 +181,7 @@ export default function App() {
         });
 
         const sortedY = Array.from(linesMap.keys()).sort((a, b) => b - a);
-        
+
         for (const y of sortedY) {
           const lineItems = linesMap.get(y)!;
           fullText += lineItems.join(' ') + '\n';
@@ -192,7 +189,7 @@ export default function App() {
       }
 
       parseRawText(fullText);
-      
+
     } catch (error: any) {
       console.error("Erro no PDF:", error);
       alert(`Erro ao ler o PDF: ${error.message || 'Falha desconhecida'}. Tente colar o texto.`);
@@ -222,7 +219,7 @@ export default function App() {
             const description = row['Descrição'] || row['descrição'] || row['Description'] || row['Detalhes'] || '';
             const priceRaw = row['Preço'] || row['preço'] || row['Price'] || row['Valor'] || row['valor'] || '0';
             const category = row['Categoria'] || row['categoria'] || row['Category'] || row['Tipo'] || 'Geral';
-            
+
             const priceStr = String(priceRaw).replace(/[^0-9.,]/g, '').replace(',', '.');
 
             return {
@@ -248,7 +245,7 @@ export default function App() {
     } else {
       alert('Formato de arquivo não suportado. Use .xlsx, .csv ou .pdf.');
     }
-    
+
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -257,19 +254,16 @@ export default function App() {
       alert('Por favor, insira o nome da empresa.');
       return;
     }
-    
+
     const menuData = {
       items,
       theme
     };
-    
-    // Converte os dados do cardápio em uma string comprimida segura para URL
+
     const compressedData = LZString.compressToEncodedURIComponent(JSON.stringify(menuData));
-    
-    // Salva localmente também como backup
+
     localStorage.setItem(`menu_${companyName.toLowerCase().replace(/\s+/g, '-')}`, JSON.stringify(menuData));
-    
-    // Redireciona passando os dados pela URL (?data=...) para que o link possa ser compartilhado!
+
     navigate(`/${companyName.toLowerCase().replace(/\s+/g, '-')}?data=${compressedData}`);
   };
 
@@ -368,7 +362,7 @@ export default function App() {
           <h2 className="text-2xl font-semibold flex items-center gap-2">
             Itens do Cardápio {isLoading && <span className="text-sm font-normal text-blue-500 animate-pulse">(Lendo arquivo...)</span>}
           </h2>
-          
+
           <div className="flex flex-wrap gap-2">
             <input 
               type="file" 
